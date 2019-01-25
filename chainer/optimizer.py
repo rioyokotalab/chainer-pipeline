@@ -450,6 +450,9 @@ class Optimizer(object):
     _loss_scale = None
     use_auto_new_epoch = False
 
+    def set_wait_reqs(self, wait_reqs):
+        self.wait_reqs = wait_reqs
+
     def setup(self, link):
         """Sets a target link and initializes the optimizer states.
 

@@ -142,7 +142,8 @@ class MultiNodeChainList(chainer.ChainList):
         super(MultiNodeChainList, self).__init__()
         self._comm = comm
         self._rank_inouts = []
-        self._wait_reqs = wait_reqs
+        self._forward_wait_reqs = list() if wait_reqs is not None else None
+        self._backward_wait_reqs = wait_reqs
 
         if isinstance(comm_tag, int):
             self._comm_tag = comm_tag
@@ -215,7 +216,7 @@ class MultiNodeChainList(chainer.ChainList):
                             rank=_rank_in,
                             delegate_variable=delegate_variable,
                             tag=self._comm_tag,
-                            comm_stack=self._wait_reqs)
+                            comm_stack=self._backward_wait_reqs)
 
                     xs.append(_x)
 
@@ -246,11 +247,13 @@ class MultiNodeChainList(chainer.ChainList):
                         comm_queue.put(x)
                         delegate_variable = x
                     elif i_comp == 0:
+                        print("will comm_stack: {}".format(self._forward_wait_reqs))
                         delegate_variable = chainermn.functions.send(
                             x, self._comm,
                             rank=_rank_out,
                             tag=self._comm_tag,
-                            comm_stack=self._wait_reqs)
+                            comm_stack=self._forward_wait_reqs)
+                        print("done comm_stack: {}".format(self._forward_wait_reqs))
                     else:
                         # If the model has multiple targets for send,
                         # we must guarantee backwards of each send to be
@@ -259,11 +262,13 @@ class MultiNodeChainList(chainer.ChainList):
                             x = chainermn.functions.pseudo_connect(
                                 delegate_variable,
                                 x)
+                        print("will comm_stack: {}".format(self._forward_wait_reqs))
                         delegate_variable = chainermn.functions.send(
                             x, self._comm,
                             rank=_rank_out,
                             tag=self._comm_tag,
-                            comm_stack=self._wait_reqs)
+                            comm_stack=self._forward_wait_reqs)
+                        print("done comm_stack: {}".format(self._forward_wait_reqs))
 
         if not comm_queue.empty():
             raise ValueError(

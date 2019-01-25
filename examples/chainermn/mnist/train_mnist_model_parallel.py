@@ -63,7 +63,7 @@ class MLP1(chainermn.MultiNodeChainList):
 def main():
     parser = argparse.ArgumentParser(
         description='ChainerMN example: pipelined neural network')
-    parser.add_argument('--batchsize', '-b', type=int, default=100,
+    parser.add_argument('--batchsize', '-b', type=int, default=10000,
                         help='Number of images in each mini-batch')
     parser.add_argument('--epoch', '-e', type=int, default=20,
                         help='Number of sweeps over the dataset to train')
@@ -110,13 +110,14 @@ def main():
 
     optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
+    optimizer.set_wait_reqs(comm_stack)
 
-    def wait_comm():
-        nonlocal comm_stack
-        for reqs in comm_stack:
+    def wait_comm(optimizer):
+        print("name: {} wait_req_:{}".format(optimizer.target, optimizer.wait_reqs))
+        for reqs in optimizer.wait_reqs:
             for req in reqs:
                 req.wait()
-        comm_stack = list()
+        optimizer.wait_reqs.clear()
 
     optimizer.add_hook(wait_comm, name='wait_comm', timing='pre')
 
@@ -132,7 +133,8 @@ def main():
         test, args.batchsize, repeat=False, shuffle=False)
 
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    #trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    trainer = training.Trainer(updater, (10, 'iteration'), out=args.out)
     trainer.extend(extensions.Evaluator(test_iter, model, device=device))
 
     # Some display and output extentions are necessary only for worker 0.

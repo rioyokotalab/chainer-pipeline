@@ -137,6 +137,7 @@ class Irecv(Recv):
         xp = backend.get_array_module(*inputs)
         reqs = self.comm.isend(grad_outputs, self.peer_rank, self.peer_tag)
         self.comm_stack.append(reqs)
+        print("append: {}".format(reqs))
 
         # dummy_var is needed to maintain Chainer's constraint.
         if inputs == ():
