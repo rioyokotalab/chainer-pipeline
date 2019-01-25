@@ -94,7 +94,7 @@ class _MultiNodePipelineOptimizer(object):
 
         target = self.target
         if lossfun is not None:
-            print("if lossfun is not None")
+            # print("if lossfun is not None")
             use_cleargrads = getattr(self, '_use_cleargrads', True)
 
             #TODO kick lossfun #split times with delay
