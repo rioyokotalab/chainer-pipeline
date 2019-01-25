@@ -43,6 +43,37 @@ class Send(chainer.Function):
             return xp.array(grad), dummy_grad
 
 
+class Isend(Send):
+    def __init__(self, comm, peer_rank, peer_tag, comm_stack):
+        super(Isend, self).__init__(comm, peer_rank, peer_tag)
+
+        self.comm_stack = comm_stack
+
+    def forward(self, inputs):
+        xp = backend.get_array_module(*inputs)
+
+        # The last input is dummy variable, to retain gradient computation
+        # of this function.
+        xs = inputs[:-1]
+
+        if len(xs) == 1:
+            xs = xs[0]
+
+        reqs = self.comm.isend(xs, self.peer_rank, self.peer_tag)
+        self.comm_stack.append(reqs)
+
+        # Return an empty variable, which serves as "delegate_variable."
+        return xp.array([], dtype=xp.float32),
+
+    def backward(self, inputs, grad_outputs):
+        reqs = self.comm_stack.pop()
+
+        for req in reqs:
+            req.wait()
+
+        return super(Isend, self).backward(inputs, grad_outputs)
+
+
 class Recv(chainer.Function):
     """Receive elements from target process."""
 
@@ -93,7 +124,31 @@ class Recv(chainer.Function):
         return dummy_var
 
 
-def send(x, communicator, rank, tag=0):
+class Irecv(Recv):
+    def __init__(self, comm, peer_rank, peer_tag, comm_stack):
+        super(Irecv, self).__init__(comm, peer_rank, peer_tag)
+
+        self.comm_stack = comm_stack
+
+    def forward(self, inputs):
+        return super(Irecv, self).forward(inputs)
+
+    def backward(self, inputs, grad_outputs):
+        xp = backend.get_array_module(*inputs)
+        reqs = self.comm.isend(grad_outputs, self.peer_rank, self.peer_tag)
+        self.comm_stack.append(reqs)
+
+        # dummy_var is needed to maintain Chainer's constraint.
+        if inputs == ():
+            dummy_var = tuple([xp.array([], dtype=xp.float32)])
+        else:
+            dummy_var = tuple([xp.zeros(x.shape, dtype=xp.float32)
+                               for x in inputs])
+
+        return dummy_var
+
+
+def send(x, communicator, rank, comm_stack=None, tag=0):
     """Send elements to target process.
 
     This function returns a dummy variable only holding the computational
@@ -131,17 +186,28 @@ def send(x, communicator, rank, tag=0):
 
     if isinstance(x, list) or isinstance(x, tuple):
         inputs = x + type(x)([dummy_var])
-        delegate_variable = Send(
-            communicator, peer_rank=rank, peer_tag=tag)(*inputs)
+        if comm_stack is None:
+            delegate_variable = Send(
+                communicator, peer_rank=rank, peer_tag=tag)(*inputs)
+        else:
+            delegate_variable = Isend(
+                communicator, peer_rank=rank, peer_tag=tag,
+                comm_stack=comm_stack)(*inputs)
     else:
-        delegate_variable = Send(
-            communicator, peer_rank=rank, peer_tag=tag)(x, dummy_var)
+        if comm_stack is None:
+            delegate_variable = Send(
+                communicator, peer_rank=rank, peer_tag=tag)(x, dummy_var)
+        else:
+            delegate_variable = Isend(
+                communicator, peer_rank=rank, peer_tag=tag,
+                comm_stack=comm_stack)(x, dummy_var)
 
     delegate_variable.name = 'delegate_variable'
     return delegate_variable
 
 
-def recv(communicator, rank, delegate_variable=None, tag=0, force_tuple=False):
+def recv(communicator, rank, delegate_variable=None, comm_stack=None, tag=0,
+         force_tuple=False):
     """Receive elements from target process.
 
     This function returns data received from target process. If ``backward()``
@@ -183,16 +249,30 @@ def recv(communicator, rank, delegate_variable=None, tag=0, force_tuple=False):
             'otherwise deadlock occurs')
 
     if delegate_variable is None:
-        res = Recv(
-            communicator,
-            peer_rank=rank,
-            peer_tag=tag)()
+        if comm_stack is None:
+            res = Recv(
+                communicator,
+                peer_rank=rank,
+                peer_tag=tag)()
+        else:
+            res = Irecv(
+                communicator,
+                peer_rank=rank,
+                peer_tag=tag,
+                comm_stack=comm_stack)()
     else:
         delegate_variable.name = 'delegate_variable'
-        res = Recv(
-            communicator,
-            peer_rank=rank,
-            peer_tag=tag)(delegate_variable)
+        if comm_stack is None:
+            res = Recv(
+                communicator,
+                peer_rank=rank,
+                peer_tag=tag)(delegate_variable)
+        else:
+            res = Irecv(
+                communicator,
+                peer_rank=rank,
+                peer_tag=tag,
+                comm_stack=comm_stack)(delegate_variable)
 
     if force_tuple and not isinstance(res, tuple):
         return tuple([res])

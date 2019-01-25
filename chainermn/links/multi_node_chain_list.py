@@ -137,11 +137,17 @@ class MultiNodeChainList(chainer.ChainList):
             ChainerMN communicator.
     """
 
-    def __init__(self, comm):
+    def __init__(self, comm, comm_tag=None, wait_reqs=None):
         chainer.utils.experimental('chainermn.MultiNodeChainList')
         super(MultiNodeChainList, self).__init__()
         self._comm = comm
         self._rank_inouts = []
+        self._wait_reqs = wait_reqs
+
+        if isinstance(comm_tag, int):
+            self._comm_tag = comm_tag
+        else:
+            self._comm_tag = 0
 
     def add_link(self, link, rank_in=None, rank_out=None):
         """Register one connected link with its inout rank.
@@ -207,7 +213,9 @@ class MultiNodeChainList(chainer.ChainList):
                         _x = chainermn.functions.recv(
                             self._comm,
                             rank=_rank_in,
-                            delegate_variable=delegate_variable)
+                            delegate_variable=delegate_variable,
+                            tag=self._comm_tag,
+                            comm_stack=self._wait_reqs)
 
                     xs.append(_x)
 
@@ -240,7 +248,9 @@ class MultiNodeChainList(chainer.ChainList):
                     elif i_comp == 0:
                         delegate_variable = chainermn.functions.send(
                             x, self._comm,
-                            rank=_rank_out)
+                            rank=_rank_out,
+                            tag=self._comm_tag,
+                            comm_stack=self._wait_reqs)
                     else:
                         # If the model has multiple targets for send,
                         # we must guarantee backwards of each send to be
@@ -251,7 +261,9 @@ class MultiNodeChainList(chainer.ChainList):
                                 x)
                         delegate_variable = chainermn.functions.send(
                             x, self._comm,
-                            rank=_rank_out)
+                            rank=_rank_out,
+                            tag=self._comm_tag,
+                            comm_stack=self._wait_reqs)
 
         if not comm_queue.empty():
             raise ValueError(
