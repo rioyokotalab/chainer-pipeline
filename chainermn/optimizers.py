@@ -71,6 +71,8 @@ class _MultiNodePipelineOptimizer(object):
 
         print("args: {}".format(args))
         print("type(args): {}".format(type(args)))
+        print("len(args): {}".format(len(args)))
+        print("len(args[0]): {}".format(args[0]))
         print("kwds: {}".format(kwds))
         print("type(kwds): {}".format(type(kwds)))
         # args, kwds: Arguments for the loss function.
