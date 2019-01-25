@@ -65,10 +65,13 @@ class _MultiNodePipelineOptimizer(object):
             'target_params', [])
 
     def update(self, lossfun=None, *args, **kwds):
-        print("self.target): {}".format(self.target))
+
+        print("(self.target): {}".format(self.target))
+        # self.target is <chainer.links.model.classifier.Classifier>
 
         target = self.target
         if lossfun is not None:
+            print("if lossfun is not None")
             use_cleargrads = getattr(self, '_use_cleargrads', True)
             loss = lossfun(*args, **kwds)
             if use_cleargrads:
@@ -94,6 +97,7 @@ class _MultiNodePipelineOptimizer(object):
             return True
 
         for param1, param2 in zip(self.target_params, previous_params):
+            print("param1: {}, param2: {}".format(param1,param2))
             if (param1[0] != param2[0]) or param1[1] != param2[1]:
                 return True
         return False
