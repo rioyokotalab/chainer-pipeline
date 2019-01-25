@@ -68,9 +68,8 @@ class _MultiNodePipelineOptimizer(object):
 
         print("(self.target): {}".format(self.target))
         # self.target is <chainer.links.model.classifier.Classifier>
+        # args, kwds: Arguments for the loss function.
 
-        print("*args: {}".format(*args))
-        print("**kwds: {}".format(**kwds))
         target = self.target
         if lossfun is not None:
             print("if lossfun is not None")
