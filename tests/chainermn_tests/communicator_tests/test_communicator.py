@@ -173,6 +173,23 @@ def check_send_and_recv(communicator, *shape):
         communicator.send(data_send, dest=rank_next, tag=0)
 
 
+def check_isend_and_recv(communicator, *shape):
+    if communicator.size < 2:
+        pytest.skip("This test is for multiple nodes")
+
+    if communicator.rank > 0:
+        rank_prev = (communicator.rank - 1) % communicator.size
+        data_recv = communicator.recv(source=rank_prev, tag=0)
+        chainer.testing.assert_allclose(
+            data_recv, rank_prev * np.ones((shape)))
+
+    if communicator.rank < communicator.size - 1:
+        rank_next = (communicator.rank + 1) % communicator.size
+        data_send = communicator.rank * \
+            np.ones((shape)).astype(np.float32)
+        communicator.isend(data_send, dest=rank_next, tag=0)
+
+
 def check_send_and_recv_tuple(communicator, data):
     if communicator.size < 2:
         pytest.skip("This test is for multiple nodes")
@@ -185,7 +202,26 @@ def check_send_and_recv_tuple(communicator, data):
 
     if communicator.rank < communicator.size - 1:
         rank_next = (communicator.rank + 1) % communicator.size
-        communicator.send(data, dest=rank_next, tag=0)
+        req = communicator.send(data, dest=rank_next, tag=0)
+        for r in req:
+            r.wait()
+
+
+def check_send_and_recv_tuple(communicator, data):
+    if communicator.size < 2:
+        pytest.skip("This test is for multiple nodes")
+
+    if communicator.rank > 0:
+        rank_prev = (communicator.rank - 1) % communicator.size
+        data_recv = communicator.recv(source=rank_prev, tag=0)
+        for array0, array1 in zip(data, data_recv):
+            chainer.testing.assert_allclose(array0, array1)
+
+    if communicator.rank < communicator.size - 1:
+        rank_next = (communicator.rank + 1) % communicator.size
+        req = communicator.isend(data, dest=rank_next, tag=0)
+        for r in req:
+            r.wait()
 
 
 def check_bcast_data(communicator, model):
