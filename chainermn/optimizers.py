@@ -77,15 +77,25 @@ class _MultiNodePipelineOptimizer(object):
         print("type(kwds): {}".format(type(kwds)))
         # args, kwds: Arguments for the loss function.
 
+        data, label = map(list, zip(*args))
+
+        print("data: {}".format(data))
+        print("label: {}".format(label))
+
         target = self.target
         if lossfun is not None:
             print("if lossfun is not None")
             use_cleargrads = getattr(self, '_use_cleargrads', True)
+
+            #TODO kick lossfun #split times with delay
             loss = lossfun(*args, **kwds)
+
             if use_cleargrads:
                 target.cleargrads()
             else:
                 target.zerograds()
+
+            # TODO kick backward #split times with delay
             loss.backward(loss_scale=self.actual_optimizer._loss_scale)
             del loss
 
