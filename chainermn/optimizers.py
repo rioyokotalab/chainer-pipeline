@@ -100,11 +100,10 @@ class _MultiNodePipelineOptimizer(object):
             #TODO kick lossfun #split times with delay
             loss_list = []
 
-            for i in range(micro_batch_num):
+            for i in range(0, micro_batch_num, micro_batch_size):
                 #Adjust microbatchsize
                 # data_array = np.array(data[i*micro_batch_size:(i+1)*micro_batch_size-1], label[i*micro_batch_size:(i+1)*micro_batch_size-1])
-                data_label = (np.array(data[i]),np.array(label([i])))
-                # data_label = tuple(data_array)
+                data_label = np.array([data[i],label[i]])
                 print("type(data_label): {}".format(type(data_label)))
                 print("data_label: {}".format(data_label))
                 loss = lossfun(data_label, **kwds)
