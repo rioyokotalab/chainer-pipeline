@@ -254,6 +254,9 @@ class MpiCommunicatorBase(communicator_base.CommunicatorBase):
             dest (int): Target process specifier.
             tag (int): Message ID (MPI feature).
 
+        Returns:
+            requests (list of requests; (return value of self.mpi_comm.isend))
+
         """
         chainer.utils.experimental(
             'chainermn.communicators.MpiCommunicatorBase.send')
