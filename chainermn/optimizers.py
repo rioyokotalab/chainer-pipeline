@@ -100,21 +100,16 @@ class _MultiNodePipelineOptimizer(object):
             #TODO kick lossfun #split times with delay
             loss_list = []
 
-            for i in range(0, micro_batch_num, micro_batch_size):
-                #Adjust microbatchsize
-                # print("data[i:i+micro_batch_size]: {}".format(data[i:i+micro_batch_size]))
-                # print("label[i:i+micro_batch_size]: {}".format(label[i:i+micro_batch_size]))
-                # print("type(data[i:i+micro_batch_size]): {}".format(type(data[i:i + micro_batch_size])))
-                # print("type(label[i:i+micro_batch_size]): {}".format(type(label[i:i + micro_batch_size])))
-                data_label = data[i:i+micro_batch_size], label[i:i + micro_batch_size]
+            # for i in range(0, micro_batch_num, micro_batch_size):
+            #     data_label = data[i:i+micro_batch_size], label[i:i + micro_batch_size]
+            #     loss = lossfun(*data_label, **kwds)
+            #     loss_list.append(loss)
+            #     #TODO Delay
 
-                # print("data_label: {}".format(data_label))
-                # print("type(data_label): {}".format(type(data_label)))
-                loss = lossfun(*data_label, **kwds)
-                loss_list.append(loss)
-                # loss = lossfun(*args, **kwds)
-                #TODO Delay
-
+            # test for accumulate
+            data_label = data[0:micro_batch_size], label[i:micro_batch_size]
+            loss = lossfun(*data_label, **kwds)
+            loss_list.append(loss)
 
             if use_cleargrads:
                 target.cleargrads()
