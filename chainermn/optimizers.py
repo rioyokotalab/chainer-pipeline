@@ -103,7 +103,7 @@ class _MultiNodePipelineOptimizer(object):
             for i in range(0, micro_batch_num, micro_batch_size):
                 #Adjust microbatchsize
                 # data_array = np.array(data[i*micro_batch_size:(i+1)*micro_batch_size-1], label[i*micro_batch_size:(i+1)*micro_batch_size-1])
-                data_label = tuple(np.array([data[i:i+micro_batch_size],label[i:i+micro_batch_size]]))
+                data_label = tuple(np.array(data[i:i+micro_batch_size]),label[i:i+micro_batch_size])
                 print("type(data_label): {}".format(type(data_label)))
                 print("data_label: {}".format(data_label))
                 loss = lossfun(data_label, **kwds)
