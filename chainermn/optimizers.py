@@ -71,8 +71,8 @@ class _MultiNodePipelineOptimizer(object):
         # print("(self.target): {}".format(self.target))
         # self.target is <chainer.links.model.classifier.Classifier>
 
-        # print("args: {}".format(args))
-        # print("type(args): {}".format(type(args)))
+        print("args: {}".format(args))
+        print("type(args): {}".format(type(args)))
         # print("len(args): {}".format(len(args)))
         # print("args[0]: {}".format(args[0]))
         # print("kwds: {}".format(kwds))
@@ -102,7 +102,8 @@ class _MultiNodePipelineOptimizer(object):
 
             for i in range(micro_batch_num):
                 #Adjust microbatchsize
-                data_label = (data[i*micro_batch_size:(i+1)*micro_batch_size-1], label[i*micro_batch_size:(i+1)*micro_batch_size-1])
+                data_label = tuple(data[i*micro_batch_size:(i+1)*micro_batch_size-1], label[i*micro_batch_size:(i+1)*micro_batch_size-1])
+                print("type(data_label): {}".format(type(data_label)))
                 loss = lossfun(data_label, **kwds)
                 loss_list.append(loss)
                 # loss = lossfun(*args, **kwds)
