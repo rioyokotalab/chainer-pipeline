@@ -69,6 +69,8 @@ class _MultiNodePipelineOptimizer(object):
         print("(self.target): {}".format(self.target))
         # self.target is <chainer.links.model.classifier.Classifier>
 
+        print("*args: {}".format(*args))
+        print("**kwds: {}".format(***kwds))
         target = self.target
         if lossfun is not None:
             print("if lossfun is not None")
@@ -83,8 +85,10 @@ class _MultiNodePipelineOptimizer(object):
 
         #TODO update as pipline here
         if self.is_changed(target):
+            print("if self.is_changed(target)")
             self.communicator.bcast_data(target)
         else:
+            print("actual_optimizer.update")
             self.communicator.allreduce_grad(target)
             self.actual_optimizer.update(None, *args, **kwds)
 
@@ -97,7 +101,10 @@ class _MultiNodePipelineOptimizer(object):
             return True
 
         for param1, param2 in zip(self.target_params, previous_params):
+
             print("param1: {}, param2: {}".format(param1,param2))
+            # param1: ('/predictor/l1/W', True), param2: ('/predictor/l1/W', True)
+
             if (param1[0] != param2[0]) or param1[1] != param2[1]:
                 return True
         return False
