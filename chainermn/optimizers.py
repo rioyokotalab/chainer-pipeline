@@ -101,13 +101,13 @@ class _MultiNodePipelineOptimizer(object):
             loss_list = []
 
             # for i in range(0, micro_batch_num, micro_batch_size):
-            #     data_label = data[i:i+micro_batch_size], label[i:i + micro_batch_size]
+            #     data_label = data[i:i-1+micro_batch_size], label[i:i-1+micro_batch_size]
             #     loss = lossfun(*data_label, **kwds)
             #     loss_list.append(loss)
             #     #TODO Delay
 
             # test for accumulate
-            data_label = data[0:micro_batch_size], label[i:micro_batch_size]
+            data_label = data[0:31], label[0:31]
             loss = lossfun(*data_label, **kwds)
             loss_list.append(loss)
 
