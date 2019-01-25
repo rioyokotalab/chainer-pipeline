@@ -262,14 +262,11 @@ class MpiCommunicatorBase(communicator_base.CommunicatorBase):
             'chainermn.communicators.MpiCommunicatorBase.send')
 
         msgtype = _MessageType(data)
-        _check_dtype('send', msgtype)
+        _check_dtype('isend', msgtype)
+	req = []
 
-        """We use ssend() instead of send() to pass unittests.
-        If we don't use it, an error occurs in
-        test_point_to_point_communication.py
-        when using MVAPICH2-2.2 and GPUs.
-        """
-        req = self.mpi_comm.isend(msgtype, dest=dest, tag=tag)
+        r = self.mpi_comm.isend(msgtype, dest=dest, tag=tag)
+	req.append(r)
 
         # Type check.
         if not msgtype.is_tuple:
@@ -284,7 +281,8 @@ class MpiCommunicatorBase(communicator_base.CommunicatorBase):
             else:
                 array = numpy.ascontiguousarray(array)
 
-            req = self.mpi_comm.Isend(array, dest=dest, tag=tag)
+            r = self.mpi_comm.Isend(array, dest=dest, tag=tag)
+	    req.append(r)
 
 	return req
 
