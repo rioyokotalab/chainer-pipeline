@@ -77,7 +77,11 @@ class _MultiNodePipelineOptimizer(object):
         print("type(kwds): {}".format(type(kwds)))
         # args, kwds: Arguments for the loss function.
 
+        # split training data and label
+        micro_batch_num = 2
         data, label = args
+
+        print("len(label): {}".format(len(label)))
 
         print("data: {}".format(data))
         print("label: {}".format(label))
