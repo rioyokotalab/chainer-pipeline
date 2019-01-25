@@ -65,6 +65,8 @@ class _MultiNodePipelineOptimizer(object):
             'target_params', [])
 
     def update(self, lossfun=None, *args, **kwds):
+        print("self.target): {}".format(self.target))
+
         target = self.target
         if lossfun is not None:
             use_cleargrads = getattr(self, '_use_cleargrads', True)
@@ -76,6 +78,7 @@ class _MultiNodePipelineOptimizer(object):
             loss.backward(loss_scale=self.actual_optimizer._loss_scale)
             del loss
 
+        #TODO update as pipline here
         if self.is_changed(target):
             self.communicator.bcast_data(target)
         else:

@@ -17,6 +17,7 @@ from chainermn.extensions import create_multi_node_checkpointer  # NOQA
 from chainermn.extensions import create_multi_node_evaluator  # NOQA
 from chainermn.links import MultiNodeChainList  # NOQA
 from chainermn.optimizers import create_multi_node_optimizer  # NOQA
+from chainermn.optimizers import create_multi_node_pipeline_optimizer  # NOQA
 
 global_except_hook._add_hook_if_enabled()
 
