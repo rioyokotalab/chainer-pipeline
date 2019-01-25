@@ -14,7 +14,6 @@ import chainermn
 import chainermn.datasets
 import chainermn.functions
 
-
 chainer.disable_experimental_feature_warning = True
 
 
@@ -37,8 +36,8 @@ class MLP0SubB(chainer.Chain):
 
 class MLP0(chainermn.MultiNodeChainList):
     # Model on worker 0.
-    def __init__(self, comm, n_out):
-        super(MLP0, self).__init__(comm=comm)
+    def __init__(self, comm, n_out, **kwds):
+        super(MLP0, self).__init__(comm=comm, **kwds)
         self.add_link(MLP0SubA(comm, n_out), rank_in=None, rank_out=1)
         self.add_link(MLP0SubB(comm), rank_in=1, rank_out=None)
 
@@ -56,8 +55,8 @@ class MLP1Sub(chainer.Chain):
 
 class MLP1(chainermn.MultiNodeChainList):
     # Model on worker 1.
-    def __init__(self, comm, n_units, n_out):
-        super(MLP1, self).__init__(comm=comm)
+    def __init__(self, comm, n_units, n_out, **kwds):
+        super(MLP1, self).__init__(comm=comm, **kwds)
         self.add_link(MLP1Sub(n_units, n_out), rank_in=0, rank_out=0)
 
 
@@ -74,6 +73,7 @@ def main():
                         help='Directory to output the result')
     parser.add_argument('--unit', '-u', type=int, default=1000,
                         help='Number of units')
+    parser.add_argument('--pipeline', '-p', action='store_true')
     args = parser.parse_args()
 
     # Prepare ChainerMN communicator.
@@ -97,10 +97,12 @@ def main():
         print('Num epoch: {}'.format(args.epoch))
         print('==========================================')
 
+    comm_stack = list() if args.pipeline else None
+
     if comm.rank == 0:
-        model = L.Classifier(MLP0(comm, args.unit))
+        model = L.Classifier(MLP0(comm, args.unit, wait_reqs=comm_stack))
     elif comm.rank == 1:
-        model = MLP1(comm, args.unit, 10)
+        model = MLP1(comm, args.unit, 10, wait_reqs=comm_stack)
 
     if device >= 0:
         chainer.cuda.get_device_from_id(device).use()
@@ -108,6 +110,15 @@ def main():
 
     optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
+
+    def wait_comm():
+        nonlocal comm_stack
+        for reqs in comm_stack:
+            for req in reqs:
+                req.wait()
+        comm_stack = list()
+
+    optimizer.add_hook(wait_comm, name='wait_comm', timing='pre')
 
     # Iterate dataset only on worker 0.
     train, test = chainer.datasets.get_mnist()
