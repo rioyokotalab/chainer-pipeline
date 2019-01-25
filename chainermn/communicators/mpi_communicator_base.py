@@ -263,10 +263,10 @@ class MpiCommunicatorBase(communicator_base.CommunicatorBase):
 
         msgtype = _MessageType(data)
         _check_dtype('isend', msgtype)
-	req = []
+        req = []
 
         r = self.mpi_comm.isend(msgtype, dest=dest, tag=tag)
-	req.append(r)
+        req.append(r)
 
         # Type check.
         if not msgtype.is_tuple:
@@ -282,7 +282,7 @@ class MpiCommunicatorBase(communicator_base.CommunicatorBase):
                 array = numpy.ascontiguousarray(array)
 
             r = self.mpi_comm.Isend(array, dest=dest, tag=tag)
-	    req.append(r)
+            req.append(r)
 
 	return req
 
