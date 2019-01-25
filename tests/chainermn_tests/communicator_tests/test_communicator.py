@@ -202,12 +202,10 @@ def check_send_and_recv_tuple(communicator, data):
 
     if communicator.rank < communicator.size - 1:
         rank_next = (communicator.rank + 1) % communicator.size
-        req = communicator.send(data, dest=rank_next, tag=0)
-        for r in req:
-            r.wait()
+        communicator.send(data, dest=rank_next, tag=0)
 
 
-def check_send_and_recv_tuple(communicator, data):
+def check_isend_and_recv_tuple(communicator, data):
     if communicator.size < 2:
         pytest.skip("This test is for multiple nodes")
 
