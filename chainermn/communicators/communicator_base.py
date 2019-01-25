@@ -121,6 +121,20 @@ class CommunicatorBase(six.with_metaclass(ABCMeta)):
         raise NotImplementedError()
 
     @abstractmethod
+    def isend(self, data, dest, tag):
+        '''Sends an ndarray to destination
+
+        Receiver must invoke ``recv()`` to wait for the message.
+
+        Args:
+            data: data to be sent (tuple, list or raw numpy/cupy array)
+            dest (int): Rank of the destination process
+            tag (int): The tag to identify the message
+
+        '''
+        raise NotImplementedError()
+
+    @abstractmethod
     def recv(self, source, tag):
         '''Receives an ndarray from source.
 
