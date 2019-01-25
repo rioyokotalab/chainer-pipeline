@@ -109,7 +109,8 @@ class _MultiNodePipelineOptimizer(object):
                 print("label[i:i+micro_batch_size]: {}".format(label[i:i+micro_batch_size]))
                 print("type(data[i:i+micro_batch_size]): {}".format(type(data[i:i + micro_batch_size])))
                 print("type(label[i:i+micro_batch_size]): {}".format(type(label[i:i + micro_batch_size])))
-                loss = lossfun(args, **kwds)
+                data_label = data[i:i+micro_batch_size] , label[i:i + micro_batch_size]
+                loss = lossfun(*data_label, **kwds)
                 loss_list.append(loss)
                 # loss = lossfun(*args, **kwds)
                 #TODO Delay
