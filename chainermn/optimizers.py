@@ -102,6 +102,7 @@ class _MultiNodePipelineOptimizer(object):
 
             for i in range(micro_batch_num):
                 #Adjust microbatchsize
+                print(i)
                 data_array = np.array(data[i*micro_batch_size:(i+1)*micro_batch_size-1], label[i*micro_batch_size:(i+1)*micro_batch_size-1])
                 data_label = tuple(data_array)
                 print("type(data_label): {}".format(type(data_label)))
