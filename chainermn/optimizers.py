@@ -66,8 +66,8 @@ class _MultiNodePipelineOptimizer(object):
 
     def update(self, lossfun=None, *args, **kwds):
 
+        #TODO create function to define micro_batch_size
         micro_batch_size = 32
-
         data, label = args
 
         mini_batch_size = len(label)
@@ -77,50 +77,24 @@ class _MultiNodePipelineOptimizer(object):
         if lossfun is not None:
             use_cleargrads = getattr(self, '_use_cleargrads', True)
 
-            #TODO kick lossfun #split times with delay
             loss_list = []
             for i in range(0, micro_batch_num, micro_batch_size):
                 data_label = data[i:i-1+micro_batch_size], label[i:i-1+micro_batch_size]
                 loss = lossfun(*data_label, **kwds)
                 loss_list.append(loss)
-                #TODO Delay
-
-            # test for accumulate
-            # data_label = data[0:31], label[0:31]
-            # loss = lossfun(*data_label, **kwds)
-            # loss_list.append(loss)
 
             if use_cleargrads:
                 target.cleargrads()
             else:
                 target.zerograds()
 
-            # TODO kick backward #split times with delay
-            for loss_item in reversed(loss_list):
-                loss_item.backward(loss_scale=self.actual_optimizer._loss_scale)
-                #TODO Delay
+            for loss in reversed(loss_list):
+                loss.backward(loss_scale=self.actual_optimizer._loss_scale)
 
             del loss
             del loss_list
 
-        if self.is_changed(target):
-            self.communicator.bcast_data(target)
-        else:
-            self.communicator.allreduce_grad(target)
-            self.actual_optimizer.update(None, *args, **kwds)
-
-    def is_changed(self, target):
-        previous_params = self.target_params
-        super(_MultiNodePipelineOptimizer, self).__setattr__(
-            'target_params', [(name, param.data is not None)
-                              for name, param in sorted(target.namedparams())])
-        if len(previous_params) != len(self.target_params):
-            return True
-
-        for param1, param2 in zip(self.target_params, previous_params):
-            if (param1[0] != param2[0]) or param1[1] != param2[1]:
-                return True
-        return False
+        self.actual_optimizer.update(None, *args, **kwds)
 
     def setup(self, link):
         self.actual_optimizer.setup(link)
