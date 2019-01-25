@@ -78,7 +78,7 @@ def main():
         model.to_gpu()
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermn.create_multi_node_optimizer(
+    optimizer = chainermn.create_multi_node_pipeline_optimizer(
         chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
 

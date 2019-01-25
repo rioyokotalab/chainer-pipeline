@@ -66,7 +66,7 @@ def main():
         description='ChainerMN example: pipelined neural network')
     parser.add_argument('--batchsize', '-b', type=int, default=100,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=20,
+    parser.add_argument('--epoch', '-e', type=int, default=2,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', action='store_true',
                         help='Use GPU')
