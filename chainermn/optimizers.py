@@ -71,8 +71,8 @@ class _MultiNodePipelineOptimizer(object):
         # print("(self.target): {}".format(self.target))
         # self.target is <chainer.links.model.classifier.Classifier>
 
-        print("args: {}".format(args))
-        print("type(args): {}".format(type(args)))
+        # print("args: {}".format(args))
+        # print("type(args): {}".format(type(args)))
         # print("len(args): {}".format(len(args)))
         # print("args[0]: {}".format(args[0]))
         # print("kwds: {}".format(kwds))
@@ -108,8 +108,8 @@ class _MultiNodePipelineOptimizer(object):
                 # print("type(label[i:i+micro_batch_size]): {}".format(type(label[i:i + micro_batch_size])))
                 data_label = data[i:i+micro_batch_size], label[i:i + micro_batch_size]
 
-                print("data_label: {}".format(data_label))
-                print("type(data_label): {}".format(type(data_label)))
+                # print("data_label: {}".format(data_label))
+                # print("type(data_label): {}".format(type(data_label)))
                 loss = lossfun(*data_label, **kwds)
                 loss_list.append(loss)
                 # loss = lossfun(*args, **kwds)
@@ -130,10 +130,10 @@ class _MultiNodePipelineOptimizer(object):
             del loss_list
 
         if self.is_changed(target):
-            print("if self.is_changed(target)")
+            # print("if self.is_changed(target)")
             self.communicator.bcast_data(target)
         else:
-            print("actual_optimizer.update")
+            # print("actual_optimizer.update")
             self.communicator.allreduce_grad(target)
             self.actual_optimizer.update(None, *args, **kwds)
 
@@ -147,7 +147,7 @@ class _MultiNodePipelineOptimizer(object):
 
         for param1, param2 in zip(self.target_params, previous_params):
 
-            print("param1: {}, param2: {}".format(param1,param2))
+            # print("param1: {}, param2: {}".format(param1,param2))
             # param1: ('/predictor/l1/W', True), param2: ('/predictor/l1/W', True)
 
             if (param1[0] != param2[0]) or param1[1] != param2[1]:
