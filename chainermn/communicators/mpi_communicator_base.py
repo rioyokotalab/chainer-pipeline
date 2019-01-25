@@ -240,6 +240,51 @@ class MpiCommunicatorBase(communicator_base.CommunicatorBase):
             """We use Ssend() for the same reason as using ssend()."""
             self.mpi_comm.Ssend(array, dest=dest, tag=tag)
 
+    def isend(self, data, dest, tag):
+        """A primitive for inter-process transmitter.
+
+        This method sends numpy-array to target process.
+        The target process is expected to invoke ``recv()``.
+        This method relies on mpi4py fast communication optimized for
+        numpy arrays, which discards any information attached to
+        chainer.Variable objects. Please be sure.
+
+        Args:
+            data: data to be sent (tuple, list or raw numpy/cupy array)
+            dest (int): Target process specifier.
+            tag (int): Message ID (MPI feature).
+
+        """
+        chainer.utils.experimental(
+            'chainermn.communicators.MpiCommunicatorBase.send')
+
+        msgtype = _MessageType(data)
+        _check_dtype('send', msgtype)
+
+        """We use ssend() instead of send() to pass unittests.
+        If we don't use it, an error occurs in
+        test_point_to_point_communication.py
+        when using MVAPICH2-2.2 and GPUs.
+        """
+        req = self.mpi_comm.isend(msgtype, dest=dest, tag=tag)
+
+        # Type check.
+        if not msgtype.is_tuple:
+            data = [data]
+
+        for array in data:
+            if chainer.backend.get_array_module(array) is not numpy:
+                chainer.cuda.Stream.null.synchronize()
+                array = (_memory_utility.get_device_memory_pointer(array),
+                         _get_mpi_type(msgtype))
+
+            else:
+                array = numpy.ascontiguousarray(array)
+
+            req = self.mpi_comm.Isend(array, dest=dest, tag=tag)
+
+	return req
+
     def recv(self, source, tag):
         """A primitive of inter-process receiver.
 
