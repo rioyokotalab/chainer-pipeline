@@ -66,25 +66,31 @@ class _MultiNodePipelineOptimizer(object):
 
     def update(self, lossfun=None, *args, **kwds):
 
-        print("(self.target): {}".format(self.target))
+        micro_batch_size = 1
+
+        # print("(self.target): {}".format(self.target))
         # self.target is <chainer.links.model.classifier.Classifier>
 
-        print("args: {}".format(args))
-        print("type(args): {}".format(type(args)))
-        print("len(args): {}".format(len(args)))
-        print("args[0]: {}".format(args[0]))
-        print("kwds: {}".format(kwds))
-        print("type(kwds): {}".format(type(kwds)))
+        # print("args: {}".format(args))
+        # print("type(args): {}".format(type(args)))
+        # print("len(args): {}".format(len(args)))
+        # print("args[0]: {}".format(args[0]))
+        # print("kwds: {}".format(kwds))
+        # print("type(kwds): {}".format(type(kwds)))
         # args, kwds: Arguments for the loss function.
 
         # split training data and label
-        micro_batch_num = 2
         data, label = args
 
         print("len(label): {}".format(len(label)))
 
+        mini_batch_size = len(label)
+        micro_batch_num = mini_batch_size // micro_batch_size
+
         print("data: {}".format(data))
         print("label: {}".format(label))
+        print("type(data): {}".format(type(data)))
+        print("type(label): {}".format(type(label)))
 
         target = self.target
         if lossfun is not None:
@@ -92,7 +98,16 @@ class _MultiNodePipelineOptimizer(object):
             use_cleargrads = getattr(self, '_use_cleargrads', True)
 
             #TODO kick lossfun #split times with delay
-            loss = lossfun(*args, **kwds)
+            loss_list = []
+
+            for i in range(micro_batch_num):
+                #Adjust microbatchsize
+                data_label = (data[i*micro_batch_size:(i+1)*micro_batch_size-1], label[i*micro_batch_size:(i+1)*micro_batch_size-1])
+                loss = lossfun(data_label, **kwds)
+                loss_list.append(loss)
+                # loss = lossfun(*args, **kwds)
+                #TODO Delay
+
 
             if use_cleargrads:
                 target.cleargrads()
@@ -100,8 +115,12 @@ class _MultiNodePipelineOptimizer(object):
                 target.zerograds()
 
             # TODO kick backward #split times with delay
-            loss.backward(loss_scale=self.actual_optimizer._loss_scale)
+            for loss_item in reversed(loss_list):
+                loss_item.backward(loss_scale=self.actual_optimizer._loss_scale)
+            # loss.backward(loss_scale=self.actual_optimizer._loss_scale)
+
             del loss
+            del loss_list
 
         #TODO update as pipline here
         if self.is_changed(target):
