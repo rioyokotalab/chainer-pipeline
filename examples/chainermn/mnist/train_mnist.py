@@ -17,7 +17,7 @@ class MLP(chainer.Chain):
     def __init__(self, n_units, n_out):
         super(MLP, self).__init__(
             # the size of the inputs to each layer will be inferred
-            l1=L.Linear(784, n_units),  # n_in -> n_units
+            l1=L.Linear(10, n_units),  # n_in -> n_units
             l2=L.Linear(n_units, n_units),  # n_units -> n_units
             l3=L.Linear(n_units, n_out),  # n_units -> n_out
         )
@@ -42,7 +42,7 @@ def main():
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
-    parser.add_argument('--unit', '-u', type=int, default=1000,
+    parser.add_argument('--unit', '-u', type=int, default=10,
                         help='Number of units')
     args = parser.parse_args()
 
