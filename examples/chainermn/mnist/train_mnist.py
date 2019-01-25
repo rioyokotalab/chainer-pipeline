@@ -34,7 +34,7 @@ def main():
                         help='Number of images in each mini-batch')
     parser.add_argument('--communicator', type=str,
                         default='hierarchical', help='Type of communicator')
-    parser.add_argument('--epoch', '-e', type=int, default=20,
+    parser.add_argument('--iterations', '-i', type=int, default=2,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', action='store_true',
                         help='Use GPU')
@@ -69,7 +69,7 @@ def main():
         print('Using {} communicator'.format(args.communicator))
         print('Num unit: {}'.format(args.unit))
         print('Num Minibatch-size: {}'.format(args.batchsize))
-        print('Num epoch: {}'.format(args.epoch))
+        print('Num iterations: {}'.format(args.iterations))
         print('==========================================')
 
     model = L.Classifier(MLP(args.unit, 10))
@@ -96,7 +96,7 @@ def main():
                                                  repeat=False, shuffle=False)
 
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    trainer = training.Trainer(updater, (args.iterations, 'iterations'), out=args.out)
 
     # Create a multi node evaluator from a standard Chainer evaluator.
     evaluator = extensions.Evaluator(test_iter, model, device=device)
