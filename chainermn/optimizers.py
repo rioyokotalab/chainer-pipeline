@@ -82,15 +82,15 @@ class _MultiNodePipelineOptimizer(object):
         # split training data and label
         data, label = args
 
-        print("len(label): {}".format(len(label)))
+        # print("len(label): {}".format(len(label)))
 
         mini_batch_size = len(label)
         micro_batch_num = mini_batch_size // micro_batch_size
 
-        print("data: {}".format(data))
-        print("label: {}".format(label))
-        print("type(data): {}".format(type(data)))
-        print("type(label): {}".format(type(label)))
+        # print("data: {}".format(data))
+        # print("label: {}".format(label))
+        # print("type(data): {}".format(type(data)))
+        # print("type(label): {}".format(type(label)))
 
         target = self.target
         if lossfun is not None:
@@ -108,8 +108,8 @@ class _MultiNodePipelineOptimizer(object):
                 # print("type(label[i:i+micro_batch_size]): {}".format(type(label[i:i + micro_batch_size])))
                 data_label = data[i:i+micro_batch_size], label[i:i + micro_batch_size]
 
-                # print("data_label: {}".format(data_label))
-                # print("type(data_label): {}".format(type(data_label)))
+                print("data_label: {}".format(data_label))
+                print("type(data_label): {}".format(type(data_label)))
                 loss = lossfun(*data_label, **kwds)
                 loss_list.append(loss)
                 # loss = lossfun(*args, **kwds)
@@ -129,7 +129,6 @@ class _MultiNodePipelineOptimizer(object):
             del loss
             del loss_list
 
-        #TODO update as pipline here
         if self.is_changed(target):
             print("if self.is_changed(target)")
             self.communicator.bcast_data(target)
