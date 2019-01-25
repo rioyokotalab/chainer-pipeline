@@ -17,7 +17,7 @@ class MLP(chainer.Chain):
     def __init__(self, n_units, n_out):
         super(MLP, self).__init__(
             # the size of the inputs to each layer will be inferred
-            l1=L.Linear(10, n_units),  # n_in -> n_units
+            l1=L.Linear(784, n_units),  # n_in -> n_units
             l2=L.Linear(n_units, n_units),  # n_units -> n_units
             l3=L.Linear(n_units, n_out),  # n_units -> n_out
         )
