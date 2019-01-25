@@ -54,6 +54,58 @@ class _MultiNodeOptimizer(object):
         setattr(self.actual_optimizer, attr_name, value)
 
 
+class _MultiNodePipelineOptimizer(object):
+
+    def __init__(self, actual_optimizer, communicator):
+        super(_MultiNodePipelineOptimizer, self).__setattr__(
+            'communicator', communicator)
+        super(_MultiNodePipelineOptimizer, self).__setattr__(
+            'actual_optimizer', actual_optimizer)
+        super(_MultiNodePipelineOptimizer, self).__setattr__(
+            'target_params', [])
+
+    def update(self, lossfun=None, *args, **kwds):
+        target = self.target
+        if lossfun is not None:
+            use_cleargrads = getattr(self, '_use_cleargrads', True)
+            loss = lossfun(*args, **kwds)
+            if use_cleargrads:
+                target.cleargrads()
+            else:
+                target.zerograds()
+            loss.backward(loss_scale=self.actual_optimizer._loss_scale)
+            del loss
+
+        if self.is_changed(target):
+            self.communicator.bcast_data(target)
+        else:
+            self.communicator.allreduce_grad(target)
+            self.actual_optimizer.update(None, *args, **kwds)
+
+    def is_changed(self, target):
+        previous_params = self.target_params
+        super(_MultiNodePipelineOptimizer, self).__setattr__(
+            'target_params', [(name, param.data is not None)
+                              for name, param in sorted(target.namedparams())])
+        if len(previous_params) != len(self.target_params):
+            return True
+
+        for param1, param2 in zip(self.target_params, previous_params):
+            if (param1[0] != param2[0]) or param1[1] != param2[1]:
+                return True
+        return False
+
+    def setup(self, link):
+        self.actual_optimizer.setup(link)
+        return self
+
+    def __getattr__(self, attr_name):
+        return getattr(self.actual_optimizer, attr_name)
+
+    def __setattr__(self, attr_name, value):
+        setattr(self.actual_optimizer, attr_name, value)
+
+
 class _DoubleBufferingOptimizer(object):
 
     def __init__(self, actual_optimizer, communicator):
@@ -167,3 +219,31 @@ def create_multi_node_optimizer(actual_optimizer, communicator,
                 'This communicator does not support double buffering.')
         return _DoubleBufferingOptimizer(actual_optimizer, communicator)
     return _MultiNodeOptimizer(actual_optimizer, communicator)
+
+
+def create_multi_node_pipeline_optimizer(actual_optimizer, communicator,
+                                double_buffering=False):
+    """Create a multi node pipeline optimizer from a Chainer optimizer.
+
+    Args:
+        actual_optimizer: Chainer optimizer
+            (e.g., ``chainer.optimizers.Adam``).
+        communicator: ChainerMN communicator.
+        double_buffering: If ``True``, all-reduce and other
+             processing (such as forward and backward) are
+             overlapped using double buffering.
+             There are cases where accuracy is affected because
+             the gradients of the previous iteration are used
+             for update. This flag is supported by
+             ``PureNcclCommunicator`` only.
+    Returns:
+        The multi node optimizer based on ``actual_optimizer``.
+    """
+    if double_buffering:
+        from chainermn.communicators.pure_nccl_communicator \
+            import PureNcclCommunicator
+        if not isinstance(communicator, PureNcclCommunicator):
+            raise ValueError(
+                'This communicator does not support double buffering.')
+        return _DoubleBufferingOptimizer(actual_optimizer, communicator)
+    return _MultiNodePipelineOptimizer(actual_optimizer, communicator)
