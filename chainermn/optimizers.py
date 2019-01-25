@@ -66,7 +66,7 @@ class _MultiNodePipelineOptimizer(object):
 
     def update(self, lossfun=None, *args, **kwds):
 
-        micro_batch_size = 1
+        micro_batch_size = 32
 
         # print("(self.target): {}".format(self.target))
         # self.target is <chainer.links.model.classifier.Classifier>
@@ -124,6 +124,7 @@ class _MultiNodePipelineOptimizer(object):
             # TODO kick backward #split times with delay
             for loss_item in reversed(loss_list):
                 loss_item.backward(loss_scale=self.actual_optimizer._loss_scale)
+                #TODO Delay
             # loss.backward(loss_scale=self.actual_optimizer._loss_scale)
 
             del loss
